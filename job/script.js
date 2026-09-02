@@ -46,4 +46,12 @@ document.addEventListener('DOMContentLoaded', () => {
             menuToggle.innerHTML = 'Menu';
         });
     });
+
+    // Applicant metrics and recruiter dashboard telemetry
+    const updateRecruiterStats = () => {
+        const activeListings = document.querySelectorAll('.job-card, .listing-card').length;
+        console.log(`Recruiter Portal initialized: ${activeListings} active listings tracked.`);
+    };
+
+    updateRecruiterStats();
 });
