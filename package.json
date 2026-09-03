@@ -1,0 +1,21 @@
+{
+  "name": "insiderjobs-portal",
+  "version": "1.0.0",
+  "description": "InsiderJobs - Modern Job Portal & Career Discovery Platform",
+  "main": "script.js",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test tests/**/*.test.js",
+    "lint": "node --check script.js job/script.js src/jobService.js",
+    "validate": "npm run lint && npm run test"
+  },
+  "keywords": [
+    "job-portal",
+    "devops",
+    "ci-cd",
+    "recruitment",
+    "automated-tests"
+  ],
+  "author": "24ESKCS034",
+  "license": "MIT"
+}
