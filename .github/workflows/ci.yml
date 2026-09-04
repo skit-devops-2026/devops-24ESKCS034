@@ -1,0 +1,46 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+      - 'fix/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & Automated Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Syntax & Lint Validation
+        run: |
+          echo "Validating JavaScript syntax and structure..."
+          node --check script.js job/script.js src/jobService.js
+
+      - name: Run Automated Test Suite
+        run: |
+          echo "Executing automated test suite..."
+          npm test
+
+      - name: Pipeline Verification Summary
+        if: always()
+        run: |
+          echo "========================================"
+          echo "CI Pipeline execution completed."
+          echo "Status: ${{ job.status }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "========================================"
