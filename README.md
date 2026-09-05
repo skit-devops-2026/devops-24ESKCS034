@@ -150,7 +150,7 @@ The repository uses GitHub Actions (`.github/workflows/ci.yml`) to enforce code 
 
 ### Pipeline Workflow
 1. **Trigger**: Triggers automatically on pushes to `main`, `feature/**`, and `fix/**` branches, as well as on pull requests targeting `main`.
-2. **Environment**: Runs on `ubuntu-latest` with Node.js 20.
+2. **Environment**: Runs on `ubuntu-latest` with Node.js 22.
 3. **Stages**:
    - Source code checkout via `actions/checkout@v4`.
    - Node.js setup via `actions/setup-node@v4`.
