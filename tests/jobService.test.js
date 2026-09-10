@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { DEFAULT_JOBS, filterJobs, paginate, validateJobPost } = require('../src/jobService.js');
+const { DEFAULT_JOBS, filterJobs, paginate, validateJobPost, getCategoryCounts } = require('../src/jobService.js');
 
 test('Job Service - Dataset Integrity', () => {
   assert.ok(Array.isArray(DEFAULT_JOBS), 'DEFAULT_JOBS should be an array');
@@ -74,4 +74,11 @@ test('Job Service - Job Posting Validation', () => {
   const invalidResult = validateJobPost(invalidJob);
   assert.strictEqual(invalidResult.valid, false);
   assert.ok(invalidResult.errors.length >= 4);
+});
+
+test('Job Service - Category Counts Breakdown', () => {
+  const counts = getCategoryCounts(DEFAULT_JOBS);
+  assert.ok(counts['Management'] >= 2);
+  assert.ok(counts['Programming'] >= 1);
+  assert.ok(counts['Cybersecurity'] >= 1);
 });

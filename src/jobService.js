@@ -177,10 +177,23 @@ function validateJobPost(job) {
   };
 }
 
+/**
+ * Calculate category count breakdown for faceted search
+ * @param {Array} jobs
+ * @returns {Object} map of category -> count
+ */
+function getCategoryCounts(jobs = DEFAULT_JOBS) {
+  return jobs.reduce((acc, job) => {
+    acc[job.category] = (acc[job.category] || 0) + 1;
+    return acc;
+  }, {});
+}
+
 module.exports = {
   DEFAULT_JOBS,
   filterJobs,
   paginate,
   validateEmail,
-  validateJobPost
+  validateJobPost,
+  getCategoryCounts
 };
