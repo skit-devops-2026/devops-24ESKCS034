@@ -13,10 +13,10 @@ This repository is configured with complete DevOps best practices including auto
 
 ## Live Demo
 
-- **Production Portal**: [https://skit-devops-2026.github.io/devops-24ESKCS034/](https://skit-devops-2026.github.io/devops-24ESKCS034/)
-- **Recruiter Sub-Portal**: [https://skit-devops-2026.github.io/devops-24ESKCS034/job/](https://skit-devops-2026.github.io/devops-24ESKCS034/job/)
-- **Local Application Health Check**: `http://localhost:3000/health`
-- **Prometheus Telemetry Metrics**: `http://localhost:3000/metrics`
+- **🚀 Containerized App (Render)**: [https://insiderjobs-portal.onrender.com](https://insiderjobs-portal.onrender.com)
+- **Health Check**: [https://insiderjobs-portal.onrender.com/health](https://insiderjobs-portal.onrender.com/health)
+- **Prometheus Metrics**: [https://insiderjobs-portal.onrender.com/metrics](https://insiderjobs-portal.onrender.com/metrics)
+- **Static Frontend (GitHub Pages)**: [https://skit-devops-2026.github.io/devops-24ESKCS034/](https://skit-devops-2026.github.io/devops-24ESKCS034/)
 
 ---
 
@@ -276,10 +276,16 @@ The Docker image is tagged and configured for publishing to GitHub Container Reg
 ## Deployment & Prometheus Monitoring (M6)
 
 ### 1. Live Deployment
-The application is deployed live with zero downtime:
-- **Production URL**: [https://skit-devops-2026.github.io/devops-24ESKCS034/](https://skit-devops-2026.github.io/devops-24ESKCS034/)
-- **Recruiter Sub-Portal**: [https://skit-devops-2026.github.io/devops-24ESKCS034/job/](https://skit-devops-2026.github.io/devops-24ESKCS034/job/)
-- **1-Click Render Cloud Deployment**: Configured via [`render.yaml`](render.yaml) blueprint.
+The containerized application is deployed live on **Render** using the production Docker image:
+
+| Deployment | Platform | URL |
+|---|---|---|
+| **Containerized App** | Render (Docker) | [https://insiderjobs-portal.onrender.com](https://insiderjobs-portal.onrender.com) |
+| **Health Check** | Render (Docker) | [https://insiderjobs-portal.onrender.com/health](https://insiderjobs-portal.onrender.com/health) |
+| **Prometheus Metrics** | Render (Docker) | [https://insiderjobs-portal.onrender.com/metrics](https://insiderjobs-portal.onrender.com/metrics) |
+| **Static Frontend** | GitHub Pages | [https://skit-devops-2026.github.io/devops-24ESKCS034/](https://skit-devops-2026.github.io/devops-24ESKCS034/) |
+
+**Render Deployment**: The [`render.yaml`](render.yaml) blueprint provides 1-click cloud deployment of the containerized Node.js server. Render builds and runs the Docker image (port 3000) with healthcheck targeting `/health`.
 
 ### 2. Prometheus Metrics Instrumentation
 The HTTP server natively exposes Prometheus-compatible metrics on the `/metrics` endpoint:
@@ -368,7 +374,7 @@ kubectl get services
 | **M5: Container** | Dockerfile present | Verified | Multi-stage Node 22 Alpine, non-root user, healthcheck |
 | **M5: Container** | docker-compose.yml | Verified | Configures app service, ports, env, and healthchecks |
 | **M5: Container** | Container Registry | Configured | Configured for GHCR (`ghcr.io/skit-devops-2026/devops-24ESKCS034:latest`) |
-| **M6: Deploy/Mon** | Live Demo URL | Verified | [Live URL](https://skit-devops-2026.github.io/devops-24ESKCS034/) in README & Render blueprint |
+| **M6: Deploy/Mon** | Live Demo URL | Verified | [Render Containerized Live URL](https://insiderjobs-portal.onrender.com) — Docker deployment via `render.yaml` |
 | **M6: Deploy/Mon** | Prometheus setup | Verified | Scrape config targeting `/metrics` in `monitoring/prometheus.yml` |
 | **M6: Deploy/Mon** | Grafana dashboard | Verified | Telemetry dashboard JSON in `monitoring/dashboard.json` |
 | **M6: Deploy/Mon** | Deploy screenshot | Verified | Real screenshot committed under `docs/deployment.png` |
