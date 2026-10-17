@@ -5,8 +5,10 @@
   "main": "script.js",
   "type": "commonjs",
   "scripts": {
+    "start": "node server.js",
+    "start:dev": "node --watch server.js",
     "test": "node --test",
-    "lint": "node --check script.js job/script.js src/jobService.js",
+    "lint": "node --check script.js job/script.js src/jobService.js server.js",
     "validate": "npm run lint && npm run test"
   },
   "keywords": [

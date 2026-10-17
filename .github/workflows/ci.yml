@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI/CD & DevOps Verification Pipeline
 
 on:
   push:
@@ -11,9 +11,15 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
 jobs:
-  build-and-test:
-    name: Build & Automated Tests
+  validate:
+    name: Lint, Static Analysis & Automated Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -25,22 +31,109 @@ jobs:
         with:
           node-version: 22
 
-      - name: Syntax & Lint Validation
+      - name: Syntax, Lint & Unit Test Suite
         run: |
-          echo "Validating JavaScript syntax and structure..."
-          node --check script.js job/script.js src/jobService.js
+          echo "Running full validation pipeline..."
+          npm run validate
 
-      - name: Run Automated Test Suite
-        run: |
-          echo "Executing automated test suite..."
-          npm test
+  container-and-kubernetes:
+    name: Docker Build, Registry Push & Kind K8s Verification
+    needs: validate
+    runs-on: ubuntu-latest
 
-      - name: Pipeline Verification Summary
-        if: always()
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
         run: |
-          echo "========================================"
-          echo "CI Pipeline execution completed."
-          echo "Status: ${{ job.status }}"
-          echo "Commit SHA: ${{ github.sha }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "========================================"
+          echo "Building production Docker image..."
+          docker build \
+            -t ghcr.io/${{ github.repository }}:latest \
+            -t insiderjobs-portal:latest .
+
+      - name: Test Docker Container Execution & Healthcheck
+        run: |
+          echo "Verifying docker run and endpoints..."
+          docker run -d --name test-app -p 3000:3000 insiderjobs-portal:latest
+          sleep 6
+          curl -f http://localhost:3000/health
+          curl -f http://localhost:3000/metrics
+          docker stop test-app && docker rm test-app
+
+      - name: Test Docker Compose Configuration
+        run: |
+          echo "Verifying docker-compose..."
+          docker compose config
+          docker compose up -d app
+          sleep 6
+          curl -f http://localhost:3000/health
+          docker compose down
+
+      - name: Set up Kind Kubernetes Cluster
+        run: |
+          echo "Installing Kind CLI..."
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+          echo "Creating Kind cluster..."
+          kind create cluster --name devops-cluster
+          kubectl cluster-info
+
+      - name: Load Image into Kind Cluster
+        run: |
+          echo "Loading Docker image into Kind..."
+          kind load docker-image ghcr.io/${{ github.repository }}:latest --name devops-cluster
+
+      - name: Deploy Kubernetes Manifests
+        run: |
+          echo "Applying Kubernetes Deployment and Service..."
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+
+      - name: Verify Kubernetes Pods & Rollout Status
+        run: |
+          echo "Waiting for pods to reach Ready state..."
+          kubectl rollout status deployment/insiderjobs-portal --timeout=120s
+          echo "=== KUBERNETES DEPLOYMENTS ==="
+          kubectl get deployments -o wide
+          echo "=== KUBERNETES PODS ==="
+          kubectl get pods -o wide
+          echo "=== KUBERNETES SERVICES ==="
+          kubectl get services -o wide
+
+      - name: Authenticate & Push to GitHub Container Registry
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          echo "Logging into GitHub Container Registry..."
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          echo "Pushing image to ghcr.io/${{ github.repository }}:latest..."
+          docker push ghcr.io/${{ github.repository }}:latest
+
+  deploy-pages:
+    name: Deploy Live Demo to GitHub Pages
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

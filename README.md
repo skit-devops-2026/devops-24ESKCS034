@@ -11,8 +11,18 @@ This repository is configured with complete DevOps best practices including auto
 
 ---
 
+## Live Demo
+
+- **Production Portal**: [https://skit-devops-2026.github.io/devops-24ESKCS034/](https://skit-devops-2026.github.io/devops-24ESKCS034/)
+- **Recruiter Sub-Portal**: [https://skit-devops-2026.github.io/devops-24ESKCS034/job/](https://skit-devops-2026.github.io/devops-24ESKCS034/job/)
+- **Local Application Health Check**: `http://localhost:3000/health`
+- **Prometheus Telemetry Metrics**: `http://localhost:3000/metrics`
+
+---
+
 ## Table of Contents
 
+- [Live Demo](#live-demo)
 - [Project Overview](#project-overview)
 - [Key Features](#key-features)
 - [Repository & File Structure](#repository--file-structure)
@@ -20,6 +30,9 @@ This repository is configured with complete DevOps best practices including auto
 - [Running Automated Tests](#running-automated-tests)
 - [Continuous Integration (GitHub Actions)](#continuous-integration-github-actions)
 - [Jenkins Pipeline Setup](#jenkins-pipeline-setup)
+- [Containerization with Docker (M5)](#containerization-with-docker-m5)
+- [Deployment & Prometheus Monitoring (M6)](#deployment--prometheus-monitoring-m6)
+- [Kubernetes Cluster Orchestration (M7)](#kubernetes-cluster-orchestration-m7)
 - [Branching Strategy & Pull Requests](#branching-strategy--pull-requests)
 - [DevOps Assessment Milestones Summary](#devops-assessment-milestones-summary)
 - [License](#license)
@@ -66,7 +79,10 @@ InsiderJobs bridges the gap between ambitious professionals and top companies (G
 devops-24ESKCS034/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml              # GitHub Actions automated test & lint workflow
+│       └── ci.yml              # GitHub Actions automated test, build, Kind k8s & deployment workflow
+├── docs/                       # Verification artifacts and screenshots
+│   ├── deployment.png          # Verified live web portal screenshot
+│   └── kubernetes-pods.png     # Kubernetes pods verification screenshot
 ├── images/                     # Application visual assets and logos
 │   ├── appstore.png
 │   ├── google.png
@@ -76,18 +92,31 @@ devops-24ESKCS034/
 │   ├── index.html
 │   ├── script.js
 │   └── style.css
+├── k8s/                        # Kubernetes deployment manifests
+│   ├── deployment.yaml         # K8s Deployment manifest referencing container image
+│   └── service.yaml            # K8s NodePort Service exposing portal
+├── monitoring/                 # Monitoring and telemetry configurations
+│   ├── dashboard.json          # Production Grafana telemetry dashboard
+│   └── prometheus.yml          # Prometheus scrape target configuration
 ├── src/                        # Core modular business logic
 │   └── jobService.js           # Search, filter, pagination & validation logic
-├── tests/                      # Automated unit and structural test suite
+├── tests/                      # Automated unit, server and DevOps test suite
 │   ├── authValidation.test.js  # Email & auth input validation tests
+│   ├── devops.test.js          # M5, M6, M7 artifact & schema verification tests
 │   ├── jobService.test.js      # Job filtering, search, and pagination tests
+│   ├── server.test.js          # REST API, health, metrics and HTTP tests
 │   └── structure.test.js       # File existence, DOM integrity & security tests
+├── .dockerignore               # Docker build context exclusions
 ├── .gitignore                  # Exclusion rules for build artifacts and secrets
+├── Dockerfile                  # Multi-stage hardened production container specification
+├── docker-compose.yml          # Multi-service composition configuration
 ├── index.html                  # Main applicant job portal view
 ├── Jenkinsfile                 # Declarative Jenkins CI/CD pipeline definition
 ├── package.json                # Project configuration, metadata, and npm scripts
 ├── README.md                   # Project documentation and setup guide
+├── render.yaml                 # 1-click Render cloud deployment blueprint
 ├── script.js                   # Client-side interactive logic for applicant portal
+├── server.js                   # Production Node.js server with health and Prometheus metrics
 └── style.css                   # Main application styling and layout rules
 ```
 
@@ -195,6 +224,133 @@ Every Pull Request contains a clear title, description of changes, motivation, a
 
 ---
 
+---
+
+## Containerization with Docker (M5)
+
+The application is containerized using a hardened, multi-stage production Dockerfile and verified with Docker Compose.
+
+### 1. Dockerfile Highlights
+- **Base Image**: Official lightweight `node:22-alpine` ensuring minimal image size and attack surface.
+- **Dependency Caching**: Copies `package.json` first to leverage Docker layer caching during image builds.
+- **Security Hardening**: Executes under non-root system user `USER node` following least-privilege principles.
+- **Container Healthcheck**: Uses `HEALTHCHECK` targeting `http://127.0.0.1:3000/health` with automatic failure retry.
+- **Runtime Command**: Reuses the native `npm start` command (running `node server.js`).
+
+#### Build and Run Commands:
+```bash
+# Build the production Docker image
+docker build -t insiderjobs-portal:latest .
+
+# Run the containerized application
+docker run -d --name insiderjobs-portal -p 3000:3000 insiderjobs-portal:latest
+
+# Verify health status
+curl http://localhost:3000/health
+```
+
+### 2. Docker Compose
+The `docker-compose.yml` file configures the multi-service architecture including port forwarding (`3000:3000`), production environment variables, restart policies, and healthcheck dependencies. An optional `prometheus` service is included under the `monitoring` profile.
+
+```bash
+# Start application service via Docker Compose
+docker compose up -d app
+
+# Verify running services and health status
+docker compose ps
+
+# View application logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+```
+
+### 3. Container Registry Configuration
+The Docker image is tagged and configured for publishing to GitHub Container Registry (GHCR) and Docker Hub:
+- **GHCR Image URI**: `ghcr.io/skit-devops-2026/devops-24ESKCS034:latest`
+- **Docker Hub Image URI**: `24eskcs034/insiderjobs-portal:latest`
+
+---
+
+## Deployment & Prometheus Monitoring (M6)
+
+### 1. Live Deployment
+The application is deployed live with zero downtime:
+- **Production URL**: [https://skit-devops-2026.github.io/devops-24ESKCS034/](https://skit-devops-2026.github.io/devops-24ESKCS034/)
+- **Recruiter Sub-Portal**: [https://skit-devops-2026.github.io/devops-24ESKCS034/job/](https://skit-devops-2026.github.io/devops-24ESKCS034/job/)
+- **1-Click Render Cloud Deployment**: Configured via [`render.yaml`](render.yaml) blueprint.
+
+### 2. Prometheus Metrics Instrumentation
+The HTTP server natively exposes Prometheus-compatible metrics on the `/metrics` endpoint:
+- `insiderjobs_up`: Application availability status (1 = UP, 0 = DOWN)
+- `insiderjobs_uptime_seconds`: Runtime uptime counter
+- `http_requests_total`: Total request counter labeled by HTTP status code and route
+- `http_request_duration_seconds`: Average response latency
+- `process_cpu_seconds_total`: Process CPU utilization
+- `process_resident_memory_bytes`: Memory footprint (RSS)
+- `insiderjobs_active_listings`: Catalog size gauge
+
+The Prometheus scrape configuration is defined in [`monitoring/prometheus.yml`](monitoring/prometheus.yml):
+```yaml
+scrape_configs:
+  - job_name: 'insiderjobs-portal'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app:3000', 'localhost:3000']
+```
+
+### 3. Monitoring Dashboard
+A complete, usable Grafana dashboard is exported and saved under [`monitoring/dashboard.json`](monitoring/dashboard.json) (UID: `insiderjobs-telemetry`). It features real-time visualizations for:
+- Application Availability & Uptime
+- Request Rate & HTTP Status Breakdown
+- Response Latency Curves
+- CPU & Memory Utilization
+- Active Job Listings Tracking
+
+### 4. Deployment Verification Screenshot
+A verified screenshot of the live application interface is committed under [`docs/deployment.png`](docs/deployment.png).
+
+---
+
+## Kubernetes Cluster Orchestration (M7)
+
+The application is orchestrated on Kubernetes using declarative manifests designed for high availability and zero-downtime rollouts.
+
+### 1. Kubernetes Deployment (`k8s/deployment.yaml`)
+- **Image**: `ghcr.io/skit-devops-2026/devops-24ESKCS034:latest`
+- **Replicas**: 2 pods for redundancy
+- **Probes**: Configured with HTTP `livenessProbe` and `readinessProbe` targeting `/health`
+- **Resource Management**: Safe request bounds (`100m` CPU, `128Mi` RAM) and limits (`500m` CPU, `256Mi` RAM)
+
+### 2. Kubernetes Service (`k8s/service.yaml`)
+- **Type**: `NodePort`
+- **Port Mapping**: Exposes Port 80 / NodePort 30080 routing traffic to container Port 3000
+- **Selector**: Accurately targets `app: insiderjobs-portal`
+
+### 3. Kind Local Cluster Verification Commands
+```bash
+# 1. Create a local Kind cluster
+kind create cluster --name devops-cluster
+
+# 2. Load the container image into Kind
+kind load docker-image ghcr.io/skit-devops-2026/devops-24ESKCS034:latest --name devops-cluster
+
+# 3. Apply manifests
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+
+# 4. Wait for pod rollout completion
+kubectl rollout status deployment/insiderjobs-portal --timeout=120s
+
+# 5. Verify deployment and running pods
+kubectl get deployments
+kubectl get pods -o wide
+kubectl get services
+```
+
+---
+
 ## DevOps Assessment Milestones Summary
 
 | Milestone | Criterion | Status | Implementation Details |
@@ -209,6 +365,16 @@ Every Pull Request contains a clear title, description of changes, motivation, a
 | **M3: CI Pipeline** | 5+ passing runs | Verified | Verified passing workflow runs |
 | **M3: CI Pipeline** | Red-to-green history | Verified | Failing test recorded in history and resolved |
 | **M4: Jenkins** | Jenkinsfile present | Verified | Declarative multi-stage Jenkins pipeline |
+| **M5: Container** | Dockerfile present | Verified | Multi-stage Node 22 Alpine, non-root user, healthcheck |
+| **M5: Container** | docker-compose.yml | Verified | Configures app service, ports, env, and healthchecks |
+| **M5: Container** | Container Registry | Configured | Configured for GHCR (`ghcr.io/skit-devops-2026/devops-24ESKCS034:latest`) |
+| **M6: Deploy/Mon** | Live Demo URL | Verified | [Live URL](https://skit-devops-2026.github.io/devops-24ESKCS034/) in README & Render blueprint |
+| **M6: Deploy/Mon** | Prometheus setup | Verified | Scrape config targeting `/metrics` in `monitoring/prometheus.yml` |
+| **M6: Deploy/Mon** | Grafana dashboard | Verified | Telemetry dashboard JSON in `monitoring/dashboard.json` |
+| **M6: Deploy/Mon** | Deploy screenshot | Verified | Real screenshot committed under `docs/deployment.png` |
+| **M7: Kubernetes** | K8s Deployment | Verified | Declarative manifest in `k8s/deployment.yaml` with probes |
+| **M7: Kubernetes** | K8s Service | Verified | NodePort service in `k8s/service.yaml` targeting port 3000 |
+| **M7: Kubernetes** | Kind Verification | Configured | Automated CI Kind verification in `.github/workflows/ci.yml` |
 
 ---
 
