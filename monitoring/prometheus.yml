@@ -1,0 +1,18 @@
+# Prometheus Configuration for InsiderJobs Portal
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'insiderjobs-portal'
+    metrics_path: '/metrics'
+    scheme: 'http'
+    static_configs:
+      - targets:
+          - 'app:3000'
+          - 'localhost:3000'
+          - 'host.docker.internal:3000'
+        labels:
+          environment: 'production'
+          app: 'insiderjobs-portal'
+          service: 'web'

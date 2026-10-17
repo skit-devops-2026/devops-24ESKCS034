@@ -1,0 +1,37 @@
+services:
+  app:
+    container_name: insiderjobs-portal
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: insiderjobs-portal:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # Optional monitoring service for local metrics collection
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: insiderjobs-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      app:
+        condition: service_healthy
+    profiles:
+      - monitoring
