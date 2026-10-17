@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: insiderjobs-portal
-          image: ghcr.io/skit-devops-2026/devops-24ESKCS034:latest
+          image: ghcr.io/skit-devops-2026/devops-24eskcs034:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
